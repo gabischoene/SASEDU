@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rede Sinodal — Visão gerencial de risco da transição</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#EBEEF2; --card:#FFFFFF; --ink:#141F2C; --muted:#5C6773; --faint:#8A93A0;
+  --line:#E1E6EC; --line2:#EEF1F5;
+  --teal:#1C6B72; --teal-soft:#E6EFEF;
+  --red:#D6453D; --amber:#E0983A; --green:#3E9E71;
+  --shadow:0 1px 2px rgba(20,31,44,.05),0 8px 24px rgba(20,31,44,.06);
+  --mono:'IBM Plex Mono',ui-monospace,monospace;
+  --disp:'Space Grotesk',system-ui,sans-serif;
+  --body:'Inter',system-ui,sans-serif;
+}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--body);
+  font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:34px 26px 80px}
+.eyebrow{font-family:var(--mono);font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--teal);font-weight:500}
+h1{font-family:var(--disp);font-weight:600;font-size:clamp(28px,4.4vw,44px);line-height:1.04;
+  letter-spacing:-.02em;margin:.32em 0 .18em}
+.lede{color:var(--muted);font-size:15.5px;max-width:60ch;margin:0}
+.meta{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+.chip{font-family:var(--mono);font-size:11.5px;letter-spacing:.02em;color:var(--muted);
+  background:var(--card);border:1px solid var(--line);border-radius:100px;padding:5px 12px}
+.chip b{color:var(--ink);font-weight:500}
+.chip.live{border-color:var(--teal);color:var(--teal)}
+
+/* tabs */
+.tabs{display:flex;gap:6px;margin:26px 0 0;border-bottom:1px solid var(--line)}
+.tab{font-family:var(--body);font-size:14px;font-weight:500;color:var(--muted);background:none;
+  border:none;border-bottom:2px solid transparent;padding:11px 16px;cursor:pointer;margin-bottom:-1px}
+.tab:hover{color:var(--ink)}
+.tab.on{color:var(--teal);border-bottom-color:var(--teal);font-weight:600}
+.tab .badge{font-family:var(--mono);font-size:10px;background:var(--teal-soft);color:var(--teal);
+  border-radius:100px;padding:2px 7px;margin-left:7px}
+.view{display:none} .view.on{display:block}
+
+/* KPI */
+.kpis{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:22px 0 8px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 15px 16px;
+  box-shadow:var(--shadow);position:relative;overflow:hidden}
+.kpi .spine{position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--teal)}
+.kpi.risk .spine{background:var(--red)} .kpi.warn .spine{background:var(--amber)}
+.kpi .num{font-family:var(--disp);font-weight:600;font-size:34px;line-height:1;letter-spacing:-.02em}
+.kpi .lbl{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.35}
+.kpi .sub{font-family:var(--mono);font-size:10px;letter-spacing:.03em;color:var(--faint);margin-top:5px;text-transform:uppercase}
+
+.grid{display:grid;gap:16px;margin-top:16px}
+.g2{grid-template-columns:1fr 1fr}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:22px 24px;
+  box-shadow:var(--shadow)}
+.phead{display:flex;justify-content:space-between;align-items:baseline;gap:12px;margin-bottom:2px}
+.ptitle{font-family:var(--disp);font-weight:600;font-size:18px;letter-spacing:-.01em}
+.pnote{font-size:12.5px;color:var(--muted);margin:6px 0 18px;max-width:66ch}
+.tag{font-family:var(--mono);font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:16px}
+.lg{display:flex;align-items:center;gap:7px;font-size:12.5px;color:var(--muted)}
+.lg .sw{width:11px;height:11px;border-radius:3px;flex:none}
+
+/* if */
+.ifwrap{display:grid;grid-template-columns:1.5fr 1fr;gap:34px;align-items:center}
+.ifside{display:flex;flex-direction:column;gap:12px;border-left:1px solid var(--line);padding-left:28px}
+.ifside .row{display:flex;align-items:center;gap:11px}
+.ifside .row .ifdot{width:26px;height:26px;flex:none}
+.ifside .row .txt{font-size:12.5px;color:var(--muted);line-height:1.3}
+.ifside .row .txt b{color:var(--ink);font-weight:600}
+.ifbars{display:flex;align-items:flex-end;gap:16px;height:150px;padding-top:8px}
+.ifcol{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-end;height:100%;cursor:pointer}
+.ifcol .bar{width:100%;max-width:64px;border-radius:7px 7px 3px 3px}
+.ifcol:hover .bar{filter:brightness(1.1)}
+.ifcol .bv{font-family:var(--disp);font-weight:600;font-size:17px;margin-bottom:6px}
+.ifcol .bx{font-family:var(--mono);font-size:11px;color:var(--muted);margin-top:9px}
+
+.mrow{display:grid;grid-template-columns:172px 1fr 34px;align-items:center;gap:12px;margin-bottom:11px}
+.mrow .mname{font-size:13px;text-align:right;color:var(--ink);line-height:1.25}
+.mrow .mtrack{display:flex;height:26px;border-radius:6px;overflow:hidden;background:var(--line2)}
+.mrow .mseg{height:100%;cursor:pointer}
+.mrow .mseg:hover{filter:brightness(1.08)}
+.mrow .mtot{font-family:var(--disp);font-weight:600;font-size:14px;color:var(--muted)}
+
+.own{display:flex;flex-direction:column;gap:14px}
+.orow{display:grid;grid-template-columns:150px 1fr 30px;align-items:center;gap:12px}
+.orow .on{font-size:12.5px;text-align:right;line-height:1.2}
+.orow .otrack{height:24px;border-radius:6px;background:var(--line2);overflow:hidden;cursor:pointer}
+.orow .ofill{height:100%}
+.orow:hover .ofill{filter:brightness(1.08)}
+.orow .ov{font-family:var(--disp);font-weight:600;font-size:14px;color:var(--muted)}
+
+.rgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.rblock .rt{font-size:12.5px;color:var(--muted);margin-bottom:12px;line-height:1.3;min-height:32px}
+.rbar{height:10px;border-radius:100px;background:var(--line2);overflow:hidden;display:flex}
+.rbar span{display:block;height:100%}
+.rlab{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;
+  color:var(--faint);margin-top:8px;gap:6px}
+.rbig{font-family:var(--disp);font-weight:600;font-size:24px;margin-top:4px;line-height:1.1}
+
+/* dossiers */
+.dossier{border:1px solid var(--line);border-radius:12px;margin-bottom:10px;overflow:hidden;background:var(--card)}
+.dossier.red{border-left:3px solid var(--red)}
+.dhead{display:flex;align-items:center;gap:12px;padding:13px 16px;cursor:pointer;
+  background:none;border:none;width:100%;text-align:left;font-family:var(--body);font-size:14px}
+.dhead:hover{background:#F8FAFB}
+.dhead .dname{font-weight:600;color:var(--ink);flex:1;min-width:0}
+.dhead .dcount{font-family:var(--mono);font-size:10.5px;color:var(--faint);white-space:nowrap}
+.dhead .dcaret{color:var(--faint);transition:transform .18s;flex:none}
+.dossier.open .dcaret{transform:rotate(90deg)}
+.dbody{display:none;padding:2px 16px 16px;border-top:1px solid var(--line2)}
+.dossier.open .dbody{display:block}
+.dsec{margin-top:14px}
+.dsec h4{font-family:var(--mono);font-size:10.5px;letter-spacing:.07em;text-transform:uppercase;
+  margin:0 0 7px;display:flex;align-items:center;gap:7px;font-weight:500}
+.dsec h4::before{content:'';width:8px;height:8px;border-radius:2px;flex:none}
+.dsec.crit h4{color:#B23029} .dsec.crit h4::before{background:var(--red)}
+.dsec.opp h4{color:#2C7A52} .dsec.opp h4::before{background:var(--green)}
+.dsec.act h4{color:var(--teal)} .dsec.act h4::before{background:var(--teal)}
+.dsec.obs h4{color:#B37324} .dsec.obs h4::before{background:var(--amber)}
+.dsec.crm h4{color:#5C6773} .dsec.crm h4::before{background:#8A93A0}
+.dsec ul{margin:0;padding-left:17px}
+.dsec li{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:6px}
+.dsec p{margin:0;font-size:13px;color:var(--muted);line-height:1.55}
+.nofill{font-family:var(--mono);font-size:11px;color:#B37324;background:#FDF1E3;
+  border-radius:6px;padding:5px 10px;display:inline-block}
+.nonereg{font-size:12.5px;color:var(--faint);font-style:italic}
+.crmgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px 16px}
+.crmgrid .ci .cl{font-family:var(--mono);font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--faint)}
+.crmgrid .ci .cv{font-size:12.5px;color:var(--ink);margin-top:2px}
+
+/* agenda */
+.agrid{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+.amon h4{font-family:var(--disp);font-size:14px;font-weight:600;margin:0 0 10px;
+  padding-bottom:8px;border-bottom:2px solid var(--teal);display:inline-block}
+.amon ul{list-style:none;margin:0;padding:0}
+.amon li{display:flex;gap:10px;padding:7px 0;border-bottom:1px solid var(--line2);font-size:12.5px}
+.amon li:last-child{border-bottom:none}
+.amon .ad{font-family:var(--mono);font-size:11.5px;font-weight:500;color:var(--teal);flex:none}
+.amon .ae{color:var(--muted);line-height:1.3}
+.amon .aw{font-family:var(--mono);font-size:10px;color:var(--faint);display:block;margin-top:1px}
+
+/* table */
+.tcontrols{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:2px 0 16px}
+.tcount{font-family:var(--mono);font-size:12px;color:var(--muted);margin-left:auto}
+select,input[type=search]{font-family:var(--body);font-size:13px;color:var(--ink);
+  background:var(--card);border:1px solid var(--line);border-radius:9px;padding:8px 11px;outline:none}
+select:focus,input:focus{border-color:var(--teal);box-shadow:0 0 0 3px var(--teal-soft)}
+input[type=search]{min-width:210px}
+.btn{font-family:var(--body);font-size:12.5px;color:var(--teal);background:var(--teal-soft);
+  border:1px solid transparent;border-radius:9px;padding:8px 13px;cursor:pointer;font-weight:500}
+.btn:hover{background:#dbe9e9}
+.btn.solid{background:var(--teal);color:#fff}
+.btn.solid:hover{background:#15565c}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--muted)}
+.btn.ghost:hover{background:var(--line2)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.active-filter{font-family:var(--mono);font-size:11px;background:var(--ink);color:#fff;
+  border-radius:100px;padding:5px 11px 5px 12px;display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+.tscroll{overflow:auto;border:1px solid var(--line);border-radius:12px;max-height:620px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;min-width:1900px}
+thead th{position:sticky;top:0;z-index:2;background:#F5F7F9;text-align:left;
+  font-family:var(--mono);font-size:10.5px;letter-spacing:.04em;text-transform:uppercase;
+  color:var(--muted);font-weight:500;padding:11px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+tbody td{padding:10px 12px;border-bottom:1px solid var(--line2);vertical-align:top;max-width:290px}
+tbody tr:hover{background:#F8FAFB}
+td.wrapcell{white-space:normal;min-width:210px;color:var(--muted);font-size:12px}
+td.esc{font-weight:600;color:var(--ink);white-space:nowrap}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:100px;
+  font-family:var(--mono);font-size:10.5px;white-space:nowrap;font-weight:500}
+.pill.red{background:#FBE9E8;color:#B23029} .pill.grey{background:#EEF1F4;color:#69727E}
+.pill.prom{background:#E7F4EC;color:#2C7A52} .pill.falta{background:#FDF1E3;color:#B37324}
+.pill.def{background:#E7F4EC;color:#2C7A52} .pill.teal{background:var(--teal-soft);color:var(--teal)}
+.ifdot{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;
+  border-radius:7px;font-family:var(--disp);font-weight:600;font-size:12.5px;color:#fff}
+.dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+
+/* ---------- IMPORT VIEW ---------- */
+.drop{border:2px dashed var(--line);border-radius:16px;background:var(--card);
+  padding:44px 24px;text-align:center;transition:border-color .15s,background .15s;cursor:pointer}
+.drop:hover,.drop.over{border-color:var(--teal);background:#F7FBFB}
+.drop .big{font-family:var(--disp);font-size:19px;font-weight:600;margin-bottom:6px}
+.drop .small{font-size:13px;color:var(--muted)}
+.drop .fmt{font-family:var(--mono);font-size:11px;color:var(--faint);margin-top:14px;line-height:1.9}
+.steps{counter-reset:s;margin:0;padding:0;list-style:none}
+.steps li{counter-increment:s;position:relative;padding-left:38px;margin-bottom:14px;
+  font-size:13.5px;color:var(--muted);line-height:1.55}
+.steps li::before{content:counter(s);position:absolute;left:0;top:-1px;width:25px;height:25px;
+  border-radius:50%;background:var(--teal-soft);color:var(--teal);font-family:var(--disp);
+  font-weight:600;font-size:12.5px;display:flex;align-items:center;justify-content:center}
+.steps li b{color:var(--ink);font-weight:600}
+.log{font-family:var(--mono);font-size:12px;line-height:1.85;background:#F7F9FA;
+  border:1px solid var(--line);border-radius:10px;padding:14px 16px;max-height:280px;overflow:auto}
+.log .ok{color:#2C7A52} .log .er{color:#B23029} .log .wr{color:#B37324} .log .mu{color:var(--faint)}
+.diff{font-size:13px}
+.diff .drow{display:grid;grid-template-columns:170px 1fr;gap:12px;padding:9px 0;border-bottom:1px solid var(--line2)}
+.diff .drow:last-child{border-bottom:none}
+.diff .de{font-weight:600;color:var(--ink);font-size:12.5px}
+.diff .dc{color:var(--muted);font-size:12.5px;line-height:1.6}
+.diff .dc code{font-family:var(--mono);font-size:11.5px;background:var(--line2);
+  border-radius:4px;padding:1px 5px;color:var(--ink)}
+.diff .old{color:#B23029;text-decoration:line-through;opacity:.75}
+.diff .new{color:#2C7A52;font-weight:600}
+.note{border-radius:10px;padding:13px 16px;font-size:13px;line-height:1.6;margin-top:14px}
+.note.warn{background:#FDF1E3;color:#8A5A12;border-left:3px solid var(--amber)}
+.note.err{background:#FBE9E8;color:#96271A;border-left:3px solid var(--red)}
+.note.ok{background:#E7F4EC;color:#22684A;border-left:3px solid var(--green)}
+.note b{font-weight:600}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:8px 16px;font-size:13px}
+.kv .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;text-transform:uppercase;
+  color:var(--faint);white-space:nowrap;padding-top:2px}
+.kv .v{color:var(--muted)}
+.kv .v b{color:var(--ink);font-weight:600}
+.maptbl{width:100%;border-collapse:collapse;font-size:12.5px;min-width:0}
+.maptbl th{background:#F5F7F9;text-align:left;font-family:var(--mono);font-size:10px;
+  letter-spacing:.04em;text-transform:uppercase;color:var(--muted);font-weight:500;
+  padding:9px 11px;border-bottom:1px solid var(--line);position:static}
+.maptbl td{padding:8px 11px;border-bottom:1px solid var(--line2);color:var(--muted)}
+.maptbl td:first-child{color:var(--ink);font-weight:600}
+
+.foot{margin-top:26px;font-size:12px;color:var(--faint);font-family:var(--mono);
+  border-top:1px solid var(--line);padding-top:16px;line-height:1.7}
+.foot b{color:var(--muted);font-weight:500}
+@media(max-width:900px){.kpis{grid-template-columns:repeat(2,1fr)}.g2{grid-template-columns:1fr}
+  .ifwrap{grid-template-columns:1fr;gap:20px}.ifside{border-left:none;padding-left:0;border-top:1px solid var(--line);padding-top:18px}
+  .rgrid{grid-template-columns:1fr}.agrid{grid-template-columns:1fr}
+  .mrow{grid-template-columns:120px 1fr 28px}.orow{grid-template-columns:100px 1fr 26px}
+  .diff .drow{grid-template-columns:1fr}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="eyebrow">Plano de transição · Consultoria · SAS EDUCAÇÃO</div>
+    <h1>Rede Sinodal — visão gerencial de risco</h1>
+    <p class="lede">Leitura executiva da transição de carteira. Atualize a base semanalmente pela aba <b>Atualizar dados</b>.</p>
+    <div class="meta" id="meta"></div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab on" data-view="painel">Painel</button>
+    <button class="tab" data-view="import">Atualizar dados<span class="badge" id="tabBadge">base inicial</span></button>
+  </div>
+
+  <!-- ============ PAINEL ============ -->
+  <div class="view on" id="v-painel">
+    <section class="kpis" id="kpis"></section>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Distribuição de IF</span><span class="tag">Coluna I · escala 1–4</span></div>
+        <p class="pnote" id="ifNote"></p>
+        <div class="ifwrap"><div class="ifbars" id="ifbars"></div><div class="ifside" id="ifside"></div></div>
+      </div>
+    </div>
+
+    <div class="grid g2">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Carteira por dono 2026</span><span class="tag">Coluna G</span></div>
+        <p class="pnote">Clique numa barra para filtrar a tabela.</p>
+        <div class="own" id="ownChart"></div>
+      </div>
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Dono da comunicação</span><span class="tag">Coluna H</span></div>
+        <p class="pnote">Quem conduz o aviso da troca com cada escola.</p>
+        <div class="own" id="comChart"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">IF × motivos de insatisfação</span><span class="tag">Coluna I × Coluna J</span></div>
+        <p class="pnote">Cada barra é um motivo citado pelas escolas, quebrado pelo IF de quem o cita. Clique num segmento para filtrar.</p>
+        <div id="motivos"></div>
+        <div class="legend" id="mot-legend"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Prontidão da transição</span><span class="tag">Colunas G · L · M · P</span></div>
+        <p class="pnote" id="readyNote"></p>
+        <div class="rgrid" id="readiness"></div>
+      </div>
+    </div>
+
+    <div class="grid" id="crmPanelWrap" style="display:none">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Camada CRM · carteira</span><span class="tag" id="crmTag"></span></div>
+        <p class="pnote" id="crmNote"></p>
+        <div class="tscroll" style="max-height:none"><table class="maptbl" id="crmTbl"></table></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Radar por escola</span><span class="tag">Colunas Q · R · S · T</span></div>
+        <p class="pnote">Observação, pontos críticos, oportunidades e ações previstas. Acompanha os filtros da tabela.</p>
+        <div class="tcontrols" style="margin:0 0 14px">
+          <span class="btn" id="expandAll">Abrir todas</span>
+          <span class="tcount" id="dcount"></span>
+        </div>
+        <div id="dossiers"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Agenda de consultorias</span><span class="tag">Coluna P</span></div>
+        <p class="pnote">Datas extraídas da coluna de próximas consultorias. “Vaga” e “a definir” aparecem em vermelho porque ainda dependem de alocação.</p>
+        <div class="agrid" id="agenda"></div>
+        <div id="noAgenda"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Planilha completa · Transição Sinodais</span><span class="tag" id="colcount"></span></div>
+        <p class="pnote">A base exatamente como está, com filtros para interagir.</p>
+        <div class="tcontrols" id="active-filters" style="margin-bottom:10px"></div>
+        <div class="tcontrols" id="controls"></div>
+        <div class="tscroll"><table id="tbl"><thead id="thead"></thead><tbody id="tbody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ IMPORT ============ -->
+  <div class="view" id="v-import">
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Atualização semanal</span><span class="tag">Aba Transição Sinodais</span></div>
+        <p class="pnote">Solte aqui a planilha da semana. O painel lê a aba <b>Transição Sinodais</b> automaticamente e se redesenha inteiro — KPIs, gráficos, radar, agenda e tabela.</p>
+        <div class="drop" id="drop">
+          <div class="big">Arraste a planilha aqui</div>
+          <div class="small">ou clique para escolher o arquivo</div>
+          <div class="fmt">
+            .XLSX / .XLSM &nbsp;→&nbsp; usa a aba “Transição Sinodais”<br>
+            .CSV com as colunas da aba &nbsp;→&nbsp; substitui a base<br>
+            .CSV de carteira (Salesforce) &nbsp;→&nbsp; entra como camada CRM
+          </div>
+        </div>
+        <input type="file" id="file" accept=".xlsx,.xlsm,.xls,.csv" style="display:none">
+        <div id="importMsg"></div>
+      </div>
+    </div>
+
+    <div class="grid" id="previewWrap" style="display:none">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Conferência antes de aplicar</span><span class="tag" id="previewTag"></span></div>
+        <p class="pnote">Revise o que mudou. Nada é gravado até você confirmar.</p>
+        <div class="kv" id="previewKV" style="margin-bottom:18px"></div>
+        <div class="diff" id="previewDiff"></div>
+        <div class="tcontrols" style="margin-top:18px">
+          <button class="btn solid" id="apply">Aplicar atualização</button>
+          <button class="btn ghost" id="cancel">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Estado atual da base</span></div>
+        <div class="kv" id="stateKV"></div>
+        <div class="tcontrols" style="margin-top:18px">
+          <button class="btn ghost" id="exportJson">Baixar base em JSON</button>
+          <button class="btn ghost" id="reset">Voltar à base inicial</button>
+        </div>
+        <div id="stateMsg"></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Registro da leitura</span><span class="tag">o que o painel entendeu</span></div>
+        <p class="pnote">Detalhe de cada arquivo lido: colunas reconhecidas, linhas aproveitadas e o que ficou de fora.</p>
+        <div class="log" id="log"><span class="mu">Nenhum arquivo importado nesta sessão.</span></div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <div class="phead"><span class="ptitle">Como preparar o arquivo</span></div>
+        <ol class="steps" style="margin-top:14px">
+          <li>Exporte ou salve a planilha <b>Time Gabi | CSP — Gestão 2026</b> com a aba <b>Transição Sinodais</b> preenchida. Não precisa apagar as outras abas.</li>
+          <li>Mantenha o <b>cabeçalho na linha 2</b>, como está hoje. O painel procura os títulos das colunas pelo nome, então mudar a ordem não quebra nada.</li>
+          <li>Solte o arquivo na área acima. A leitura acontece <b>no seu navegador</b> — nada é enviado para fora.</li>
+          <li>Confira o resumo de diferenças e clique em <b>Aplicar atualização</b>.</li>
+        </ol>
+        <div class="note warn" style="margin-top:18px">
+          <b>Colunas que o painel procura:</b> Escola · Quantidade de CNPJs/Unidades · Situação · Dono/Parceiro · Dono atual 2026 · Dono da comunicação · IF · Motivos de insatisfação · NPS 2026.1 · Passagem de bastão interna · Comunicação escola · Modelo · Farol · Próximas datas de consultoria · Observação · Pontos críticos no radar · Pontos de oportunidade no radar · Ações previstas.<br>
+          Colunas a mais são ignoradas sem erro; colunas em falta aparecem no registro de leitura.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot" id="foot"></div>
+</div>
+
+<script>
+/* ==================== BASE INICIAL ==================== */
+const COLS = ["Consultor","Tema","Escola","Quantidade de CNPJs/Unidades","Situação","Dono/Parceiro","Dono atual 2026","Dono da comunicação","IF","Motivos de insatisfação","NPS 2026.1","Satatus - Passagem de bastão interna","Status - Comunicação escola","Modelo","Farol","Próximas datas de consultoria","Observação","Pontos críticos no radar","Pontos de oportunidade no radar","Ações previstas"];
+
+const BASE = [
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Gustavo Adolfo","Quantidade de CNPJs/Unidades":2,"Situação":"Isa é dona e Fay é parceiro | Permanece","Dono/Parceiro":"Dona","Dono atual 2026":"Isabela Munis De Oliveira","Dono da comunicação":"","IF":2,"Motivos de insatisfação":"Operacional - entregas","NPS 2026.1":"PROMOTOR","Satatus - Passagem de bastão interna":"","Status - Comunicação escola":"","Modelo":"","Farol":"","Próximas datas de consultoria":"01/09 (Isa) e 23/09 (Fay)","Observação":"",
+"Pontos críticos no radar":"- Vão sediar o Congresso de 2028 e o Diretor Edson trouxe que o stand foi fraco. Bernoulli e Anglo se destacaram. É um tema de MKT (visual do stand e ter cuia). Atrasamos o pagamento do patrocínio.\n- Edson e Jonas (geral) reforçaram para pararmos de prospectar a Rede com outras marcas.\n- Edson reforçou que estamos perdendo em relação às outras marcas.",
+"Pontos de oportunidade no radar":"- Edson quer conversar com Rafa Martines sobre possível ampliação da escola",
+"Ações previstas":"- 07/08 - Observatório ENEM online com Ana Frizzera\n- Ação prevista com Especialista Pedagógico: validando data e pessoas\n- Vamos trazer o Diretor Edson pro Fórum de Mantenedores com tudo pago e eles pretendem assinar o contrato no Fórum"},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal do Salvador","Quantidade de CNPJs/Unidades":1,"Situação":"Isa é dona e Fay é parceiro | Fay deixa de ser parceiro","Dono/Parceiro":"Dona","Dono atual 2026":"Isabela Munis De Oliveira","Dono da comunicação":"Gabrielle Fontes Schoene","IF":2,"Motivos de insatisfação":"Operacional - entregas, Consultoria Pedagógica, Operacional - Meu Arco","NPS 2026.1":"PROMOTOR","Satatus - Passagem de bastão interna":"","Status - Comunicação escola":"Não realizado","Modelo":"Sync online","Farol":"🔴 - Risco de satisfação","Próximas datas de consultoria":"28/09 (Isa e vaga)","Observação":"Diretor André entrou em contato em 30/06 solicitando saída do consultor de CIMA",
+"Pontos críticos no radar":"- Recebeu uma nota fiscal com logo do SAE\n- Acompanhar preenchimento da planilha com adoção de materiais 2027",
+"Pontos de oportunidade no radar":"-",
+"Ações previstas":"- 17/08 - validando Análise do Observatório ENEM com Ana Frizzera\n- Negociação está em fase de definição de materiais"},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Dorothea Schafke","Quantidade de CNPJs/Unidades":1,"Situação":"Isa é dona e Fay é parceiro | Permanece","Dono/Parceiro":"Dona","Dono atual 2026":"Isabela Munis De Oliveira","Dono da comunicação":"","IF":4,"Motivos de insatisfação":"Consultoria Pedagógica","NPS 2026.1":"PROMOTOR","Satatus - Passagem de bastão interna":"","Status - Comunicação escola":"","Modelo":"","Farol":"","Próximas datas de consultoria":"01/10 (Isa) e 01/10 (Fay)","Observação":"",
+"Pontos críticos no radar":"-","Pontos de oportunidade no radar":"-",
+"Ações previstas":"- Paola e Simone vão estar presentes no Fórum de Mantenedores tanto do SAE quanto da IS\n- Assinar contrato no Fórum de Mantenedores\n- Validar realizar ação de Observatório ENEM com Ana Frizzera após 12/08"},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Da Paz","Quantidade de CNPJs/Unidades":1,"Situação":"Fay é dono e Isa é parceira | Fay deixa de ser dono","Dono/Parceiro":"Parceira","Dono atual 2026":"Pedro Marcos Mossulin Ferreira","Dono da comunicação":"Isabela Munis De Oliveira","IF":2,"Motivos de insatisfação":"Operacional - entregas, Operacional - Meu Arco","NPS 2026.1":"FALTA","Satatus - Passagem de bastão interna":"Não realizado","Status - Comunicação escola":"Não realizado","Modelo":"Sync online","Farol":"🔴 - Risco de satisfação","Próximas datas de consultoria":"01/09 (vaga) , 27/10 (A DEFINIR) e 10/11 (vaga) + 1 data de EFAI (A DEFINIR)","Observação":"Tinham um excelente relacionamento com Luiz Carlos. Soube da saída do Vini antes de avisarmos.",
+"Pontos críticos no radar":"- Criticou a demora no Observatório ENEM. O Bernoulli apresentou antes do SAS. Eles estão melhorando a ferramenta e não focando mais só no ranking. O argumento de 'demorar por ser uma ferramenta mais robusta que as demais' não está sendo suficiente mais. Há uma crítica à comunicação: não foram informados de quando a ferramenta da Arco estaria disponível\n- Isa não realizar rotas muito longas para cidades pequenas, portanto temos 1 visita presencial de EFAI para ajustar. Solução: 1) solicitar a escola para ser online e 2) contar com outra consultora para fazer presencial | Sugestão: Vinícius Batista Vieira Ferreira",
+"Pontos de oportunidade no radar":"-",
+"Ações previstas":"- 07/08 - Observatório ENEM online com Ana Frizzera\n- Vamos tentar garantir a assinatura no Fórum de Mantenedores"},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Martinus","Quantidade de CNPJs/Unidades":1,"Situação":"Fay é dono e Isa é parceira | Fay deixa de ser dono","Dono/Parceiro":"Dona","Dono atual 2026":"Pedro Marcos Mossulin Ferreira","Dono da comunicação":"Rafael De Simone Martines","IF":2,"Motivos de insatisfação":"Prestígio/Relacionamento","NPS 2026.1":"FALTA","Satatus - Passagem de bastão interna":"Não realizado","Status - Comunicação escola":"Não realizado","Modelo":"","Farol":"","Próximas datas de consultoria":"04/08 (vaga), 13/08 (Isa)  e 20/10 (vaga) + da Isa em ajuste de data","Observação":"Importante: Fay fez ação recentemente e a transição precisa ser gradual similar ao que construímos com Dom Feliciano",
+"Pontos críticos no radar":"- O Leandro está muito misterioso e tem sido um grande detrator na Rede. Ex: ele liga para as escolas para entender como está a satisfação",
+"Pontos de oportunidade no radar":"-",
+"Ações previstas":"- Estamos buscando o professor Ademar para Observatório ENEM (Fay já fez, vamos consultar a escola)\n- Gabi alinhar com Rafa para ele se aproximar do Leandro e conduzir a comunicação sobre a consultoria\n- Negociação foi startada, mas ainda está no processo"},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Prado","Quantidade de CNPJs/Unidades":1,"Situação":"Fay é dono","Dono/Parceiro":"Parceira","Dono atual 2026":"Pedro Marcos Mossulin Ferreira","Dono da comunicação":"Tatiane Malheiros Da Silva","IF":1,"Motivos de insatisfação":"Consultoria Pedagógica","NPS 2026.1":"FALTA","Satatus - Passagem de bastão interna":"Não realizado","Status - Comunicação escola":"Não realizado","Modelo":"Sync online","Farol":"🔴 - Risco de satisfação","Próximas datas de consultoria":"Não teve visita e não tem previsão","Observação":"As 3 unidades do (Prado, São Leopoldo e Portão) pediram distrato e estamos em Plano de Reversão competindo com Anglo, Bernoulli e SM. Ações que serão realizadas: 1) VP com Ana Carolina Sampaio Frizzera e 2) Convite para Fórum de Mantenedores avaliando a compra da passagem.",
+"Pontos críticos no radar":"- Distrato verbalizado\n- Nunca tiveram uma pessoa responsável do EFAI: ficou para o time de remotas, mas nunca foi alocado",
+"Pontos de oportunidade no radar":"- Tentar manter a parceria para 2027: voltamos para o nível de validação pedagógica",
+"Ações previstas":"- 11/08 - Observatório ENEM online com as unidades com a Ana Frizzera e vamos apresentar o Relatório de Rede\n- Vamos trazer duas pessoas das 3 Unidades para o Fórum de Mantenedores com tudo pago | Coordenadora de CIEN das 3 unidades + Roberta (coord geral de EFAF)\n- Enviamos material de análise para VP\n- Vamos incluir a Isa e o Pedro de forma online para começar a estreitar laços com as escolas\n- Ação de validação pedagógica está em planejamento e ainda não tem data, mas será com Ana Frizzera\n- Negociação está travada porque estamos em VP novamente"},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal São Leopoldo","Quantidade de CNPJs/Unidades":1,"Situação":"Fay é dono","Dono/Parceiro":"Parceira","Dono atual 2026":"Pedro Marcos Mossulin Ferreira","Dono da comunicação":"Tatiane Malheiros Da Silva","IF":1,"Motivos de insatisfação":"Consultoria Pedagógica","NPS 2026.1":"FALTA","Satatus - Passagem de bastão interna":"Não realizado","Status - Comunicação escola":"Não realizado","Modelo":"Sync online","Farol":"🔴 - Risco de satisfação","Próximas datas de consultoria":"Não teve visita e não tem previsão","Observação":"As 3 unidades do (Prado, São Leopoldo e Portão) pediram distrato e estamos em Plano de Reversão competindo com Anglo, Bernoulli e SM. Ações que serão realizadas: 1) VP com Ana Carolina Sampaio Frizzera e 2) Convite para Fórum de Mantenedores avaliando a compra da passagem",
+"Pontos críticos no radar":"","Pontos de oportunidade no radar":"","Ações previstas":""},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Portão","Quantidade de CNPJs/Unidades":1,"Situação":"Fay é dono","Dono/Parceiro":"Parceira","Dono atual 2026":"Pedro Marcos Mossulin Ferreira","Dono da comunicação":"Tatiane Malheiros Da Silva","IF":1,"Motivos de insatisfação":"Consultoria Pedagógica","NPS 2026.1":"FALTA","Satatus - Passagem de bastão interna":"Não realizado","Status - Comunicação escola":"Não realizado","Modelo":"Sync online","Farol":"🔴 - Risco de satisfação","Próximas datas de consultoria":"Não teve visita e não tem previsão","Observação":"As 3 unidades do (Prado, São Leopoldo e Portão) pediram distrato e estamos em Plano de Reversão competindo com Anglo, Bernoulli e SM. Ações que serão realizadas: 1) VP com Ana Carolina Sampaio Frizzera e 2) Convite para Fórum de Mantenedores avaliando a compra da passagem",
+"Pontos críticos no radar":"","Pontos de oportunidade no radar":"","Ações previstas":""},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Martim Luther Estrela","Quantidade de CNPJs/Unidades":1,"Situação":"Isa é dona >> está com remota","Dono/Parceiro":"Dona","Dono atual 2026":"Isabela Munis De Oliveira","Dono da comunicação":"","IF":4,"Motivos de insatisfação":"","NPS 2026.1":"FALTA","Satatus - Passagem de bastão interna":"","Status - Comunicação escola":"","Modelo":"","Farol":"","Próximas datas de consultoria":"31/08 (Isa)","Observação":"",
+"Pontos críticos no radar":"-",
+"Pontos de oportunidade no radar":"- Escola assinou ampliação em 2026 (para 2027). Usava só EFAI e vai usar tudo até EM",
+"Ações previstas":"- 31/08 vai ser a Implantação. Possivelmente a data pode ser alterada"},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Parecis","Quantidade de CNPJs/Unidades":1,"Situação":"Fay é dono e Isa é parceira | Fay deixa de ser dono","Dono/Parceiro":"Parceira","Dono atual 2026":"Pedro Marcos Mossulin Ferreira","Dono da comunicação":"Tatiane Malheiros Da Silva","IF":3,"Motivos de insatisfação":"Operacional - entregas, Atendimento/RC, Produto","NPS 2026.1":"FALTA","Satatus - Passagem de bastão interna":"Não realizado","Status - Comunicação escola":"Não realizado","Modelo":"Sync online","Farol":"🔴 - Risco de satisfação","Próximas datas de consultoria":"23/09 (A DEFINIR) e 07/10 (vaga)","Observação":"Escola em que a Isa tem dificuldade de entrada. Ainda muito enigmáticos.",
+"Pontos críticos no radar":"- Escola está bastante incomodada com nossa comunicação\n- Escola está insatisfeita com a quantidade de erros operacionais no início do ano\n- Isa não realizar rotas muito longas para cidades pequenas, portanto temos que contar com outra consultora para fazer presencial | Sugestão: Vinícius Batista Vieira Ferreira",
+"Pontos de oportunidade no radar":"-",
+"Ações previstas":"FALTA"},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Doutor Blumenau","Quantidade de CNPJs/Unidades":1,"Situação":"Fay é dono","Dono/Parceiro":"Parceira","Dono atual 2026":"Pedro Marcos Mossulin Ferreira","Dono da comunicação":"Isabela Munis De Oliveira","IF":2,"Motivos de insatisfação":"Consultoria Pedagógica","NPS 2026.1":"FALTA","Satatus - Passagem de bastão interna":"Não realizado","Status - Comunicação escola":"Não realizado","Modelo":"Sync online","Farol":"🔴 - Risco de satisfação","Próximas datas de consultoria":"06/08 (vaga) e 22/10 (vaga)","Observação":"Escola que já perdemos o INF e EFAI e está em altíssimo risco. Precisamos: 1) Alocar um especialista para agenda de 17/07 que estava marcada com Vini Beltrão; 2) Realizar leitura online de Observatório ENEM por Ana Carolina Sampaio Frizzera e 3) Realizar devolutiva de AVLs do primeiro semestre com Isabela Munis De Oliveira online e buscar um consultor CIMA para ir presencial. Saída do Vini avisada.",
+"Pontos críticos no radar":"FALTA","Pontos de oportunidade no radar":"FALTA","Ações previstas":"FALTA"},
+{"Consultor":"Isabela Munis De Oliveira","Tema":"Carteira Fay e Isabella","Escola":"Sinodal Teutônia","Quantidade de CNPJs/Unidades":1,"Situação":"Isa é dona e Fay é parceiro | Permanece","Dono/Parceiro":"Dona","Dono atual 2026":"Isabela Munis De Oliveira","Dono da comunicação":"","IF":4,"Motivos de insatisfação":"Consultoria Pedagógica","NPS 2026.1":"PROMOTOR","Satatus - Passagem de bastão interna":"","Status - Comunicação escola":"","Modelo":"","Farol":"","Próximas datas de consultoria":"24/09 (Fay) e 29/09 (Isa)","Observação":"Saída do Vini avisada.",
+"Pontos críticos no radar":"FALTA","Pontos de oportunidade no radar":"FALTA","Ações previstas":"FALTA"}
+];
+
+/* apelidos: nome na aba -> trecho do nome oficial no export de carteira */
+const ALIAS = {
+  "Sinodal Gustavo Adolfo":        ["MEDIO GUSTAVO ADOLFO","GUSTAVO ADOLFO"],
+  "Sinodal Dorothea Schafke":      ["DOROTHEA SCHAFKE"],
+  "Sinodal São Leopoldo":          ["ISAEC - SAO LEOPOLDO"],
+  "Sinodal Portão":                ["SINODAL PORTAO"],
+  "Sinodal Martim Luther Estrela": ["MARTIN LUTHER ESTRELA"],
+  "Sinodal Parecis":               ["PARECIS"],
+  "Sinodal Teutônia":              ["COLEGIO TEUTONIA"]
+};
+
+let ROWS = BASE.map(r=>({...r}));
+let CRM  = null;   // {porEscola:{}, naoCasadas:[], arquivo, quando}
+let META = {origem:"base inicial", quando:null, arquivo:null};
+
+/* ==================== HELPERS ==================== */
+const $  = id => document.getElementById(id);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const IFHEX = {1:'#D6453D',2:'#E0983A',3:'#8FB255',4:'#3E9E71'};
+const IFNOME = {1:'Distrato verbalizado',2:'Perda provável',3:'Neutro / controle',4:'Satisfeito'};
+const C = { esc:'Escola', cons:'Consultor', un:'Quantidade de CNPJs/Unidades', sit:'Situação',
+  donoP:'Dono/Parceiro', dono:'Dono atual 2026', donoC:'Dono da comunicação', IF:'IF',
+  mot:'Motivos de insatisfação', nps:'NPS 2026.1', pb:'Satatus - Passagem de bastão interna',
+  com:'Status - Comunicação escola', modelo:'Modelo', farol:'Farol',
+  datas:'Próximas datas de consultoria', obs:'Observação',
+  crit:'Pontos críticos no radar', opp:'Pontos de oportunidade no radar', act:'Ações previstas' };
+const isRed = v => typeof v==='string' && v.indexOf('🔴')>-1;
+const farolKey = v => isRed(v) ? 'Risco de satisfação' : 'Sem classificação';
+const uniq = a => [...new Set(a)];
+const semAgenda = r => !r[C.datas] || /não tem previsão/i.test(r[C.datas]);
+function radar(v){
+  const s=String(v||'').trim();
+  if(s===''||s.toUpperCase()==='FALTA') return 'falta';
+  if(s==='-') return 'none';
+  return s.split('\n').map(x=>x.replace(/^-\s*/,'').trim()).filter(Boolean);
+}
+const temFalta = r => [C.crit,C.opp,C.act].some(c=>radar(r[c])==='falta');
+const norm = s => String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+  .toUpperCase().replace(/[^A-Z0-9 ]/g,' ').replace(/\s+/g,' ').trim();
+
+/* ==================== PERSISTÊNCIA ==================== */
+const TEMSTORAGE = typeof window!=='undefined' && window.storage && typeof window.storage.get==='function';
+async function salvar(){
+  if(!TEMSTORAGE) return false;
+  try{ await window.storage.set('sinodal:estado', JSON.stringify({rows:ROWS,crm:CRM,meta:META}), false); return true; }
+  catch(e){ return false; }
+}
+async function carregar(){
+  if(!TEMSTORAGE) return false;
+  try{
+    const r = await window.storage.get('sinodal:estado', false);
+    if(!r||!r.value) return false;
+    const d = JSON.parse(r.value);
+    if(d.rows&&d.rows.length){ ROWS=d.rows; CRM=d.crm||null; META=d.meta||META; return true; }
+  }catch(e){}
+  return false;
+}
+
+/* ==================== LEITURA DE ARQUIVOS ==================== */
+function parseCSV(txt){
+  const linhas=[]; let campo='', linha=[], dentro=false;
+  txt = txt.replace(/^\uFEFF/,'');
+  for(let i=0;i<txt.length;i++){
+    const c=txt[i];
+    if(dentro){
+      if(c==='"'){ if(txt[i+1]==='"'){campo+='"';i++;} else dentro=false; }
+      else campo+=c;
+    } else {
+      if(c==='"') dentro=true;
+      else if(c===','){ linha.push(campo); campo=''; }
+      else if(c==='\n'){ linha.push(campo); linhas.push(linha); linha=[]; campo=''; }
+      else if(c!=='\r') campo+=c;
+    }
+  }
+  if(campo!==''||linha.length){ linha.push(campo); linhas.push(linha); }
+  return linhas.filter(l=>l.some(v=>String(v).trim()!==''));
+}
+function matrizParaObjetos(m, idxCab){
+  const cab = m[idxCab].map(h=>String(h).trim());
+  return m.slice(idxCab+1).map(l=>{
+    const o={}; cab.forEach((h,i)=>{ if(h) o[h]= l[i]===undefined?'':l[i]; }); return o;
+  });
+}
+/* acha a linha de cabeçalho procurando "Escola" */
+function acharCabecalho(m){
+  for(let i=0;i<Math.min(m.length,8);i++){
+    const linha=m[i].map(v=>norm(v));
+    if(linha.includes('ESCOLA')) return i;
+  }
+  return 0;
+}
+/* casa os títulos da planilha com as colunas que o painel usa */
+const SINONIMOS = {
+  [C.esc]:['ESCOLA'], [C.cons]:['CONSULTOR'], 'Tema':['TEMA'],
+  [C.un]:['QUANTIDADE DE CNPJS UNIDADES','QUANTIDADE DE CNPJS','UNIDADES','QTD UNIDADES'],
+  [C.sit]:['SITUACAO'], [C.donoP]:['DONO PARCEIRO'],
+  [C.dono]:['DONO ATUAL 2026','DONO 2026','DONO ATUAL'],
+  [C.donoC]:['DONO DA COMUNICACAO'], [C.IF]:['IF'],
+  [C.mot]:['MOTIVOS DE INSATISFACAO','MOTIVO DE INSATISFACAO'],
+  [C.nps]:['NPS 2026 1','NPS 2026','NPS'],
+  [C.pb]:['SATATUS PASSAGEM DE BASTAO INTERNA','STATUS PASSAGEM DE BASTAO INTERNA','PASSAGEM DE BASTAO INTERNA','PASSAGEM DE BASTAO'],
+  [C.com]:['STATUS COMUNICACAO ESCOLA','COMUNICACAO ESCOLA'],
+  [C.modelo]:['MODELO'], [C.farol]:['FAROL'],
+  [C.datas]:['PROXIMAS DATAS DE CONSULTORIA','PROXIMAS DATAS'],
+  [C.obs]:['OBSERVACAO','OBSERVACOES'],
+  [C.crit]:['PONTOS CRITICOS NO RADAR','PONTOS CRITICOS'],
+  [C.opp]:['PONTOS DE OPORTUNIDADE NO RADAR','PONTOS DE OPORTUNIDADE','OPORTUNIDADES'],
+  [C.act]:['ACOES PREVISTAS','ACOES']
+};
+function mapearColunas(cabecalhos){
+  const mapa={}, achadas=[], faltando=[];
+  const normCab = cabecalhos.map(h=>({raw:h, n:norm(h)}));
+  for(const alvo in SINONIMOS){
+    let hit = normCab.find(h=>SINONIMOS[alvo].includes(h.n));
+    if(!hit) hit = normCab.find(h=>SINONIMOS[alvo].some(s=>h.n.startsWith(s)));
+    if(hit){ mapa[alvo]=hit.raw; achadas.push(alvo); }
+    else faltando.push(alvo);
+  }
+  return {mapa, achadas, faltando};
+}
+function ehCarteiraCRM(cabecalhos){
+  const n = cabecalhos.map(norm);
+  return n.includes('IF CONSOLIDADO') || (n.includes('RISCO MARCA') && n.includes('ETAPA FUNIL RENOVACAO'));
+}
+
+/* ==================== LOG ==================== */
+let LOG=[];
+function logar(txt, cls){ LOG.push(`<span class="${cls||''}">${txt}</span>`); $('log').innerHTML = LOG.join('<br>'); }
+function limparLog(){ LOG=[]; }
+
+/* ==================== IMPORTAÇÃO ==================== */
+let PENDENTE = null;   // {tipo:'base'|'crm', dados, resumo}
+
+function lerArquivo(file){
+  limparLog();
+  logar(`Arquivo: <b>${esc(file.name)}</b> · ${(file.size/1024).toFixed(0)} KB`, 'mu');
+  const ext = (file.name.split('.').pop()||'').toLowerCase();
+  const leitor = new FileReader();
+  leitor.onerror = ()=> mostrarErro('Não consegui ler o arquivo. Tente salvar de novo e repetir.');
+  if(ext==='csv'){
+    leitor.onload = e => processarMatriz(parseCSV(e.target.result), file.name, 'CSV');
+    leitor.readAsText(file, 'UTF-8');
+  } else {
+    leitor.onload = e => {
+      try{
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+        logar(`Abas encontradas: ${wb.SheetNames.map(s=>esc(s)).join(' · ')}`, 'mu');
+        const alvo = wb.SheetNames.find(s=>norm(s)==='TRANSICAO SINODAIS')
+                  || wb.SheetNames.find(s=>norm(s).includes('TRANSICAO SINODAIS'));
+        if(!alvo){
+          mostrarErro(`Não achei a aba <b>Transição Sinodais</b> nesse arquivo. Abas disponíveis: ${wb.SheetNames.map(esc).join(', ')}.`);
+          logar('Aba "Transição Sinodais" não encontrada — importação cancelada.','er');
+          return;
+        }
+        logar(`Aba usada: <b>${esc(alvo)}</b>`, 'ok');
+        const m = XLSX.utils.sheet_to_json(wb.Sheets[alvo], {header:1, defval:'', raw:false, blankrows:false});
+        processarMatriz(m, file.name, `XLSX · aba ${alvo}`);
+      }catch(err){ mostrarErro('Arquivo Excel ilegível: '+esc(err.message)); }
+    };
+    leitor.readAsArrayBuffer(file);
+  }
+}
+
+function processarMatriz(m, nomeArquivo, origem){
+  if(!m.length){ mostrarErro('O arquivo veio vazio.'); return; }
+  const idx = acharCabecalho(m);
+  const cab = m[idx].map(h=>String(h).trim()).filter(Boolean);
+  logar(`Cabeçalho na linha ${idx+1} · ${cab.length} colunas`, 'mu');
+
+  if(ehCarteiraCRM(cab)){ processarCRM(matrizParaObjetos(m, idx), nomeArquivo, origem); return; }
+
+  const {mapa, achadas, faltando} = mapearColunas(cab);
+  if(!mapa[C.esc]){
+    mostrarErro('Não encontrei uma coluna <b>Escola</b>. Esse arquivo não parece ser a aba Transição Sinodais nem o export de carteira.');
+    logar('Coluna "Escola" ausente — importação cancelada.','er'); return;
+  }
+  logar(`Colunas reconhecidas: <b>${achadas.length}</b> de ${Object.keys(SINONIMOS).length}`, 'ok');
+  if(faltando.length) logar(`Não vieram no arquivo: ${faltando.map(esc).join(' · ')}`, 'wr');
+
+  const brutos = matrizParaObjetos(m, idx);
+  const novas = brutos.map(b=>{
+    const o={}; COLS.forEach(c=>{ o[c] = mapa[c]!==undefined ? String(b[mapa[c]]??'').trim() : ''; });
+    const n = parseInt(o[C.IF],10); o[C.IF] = isNaN(n)?'':n;
+    const u = parseInt(o[C.un],10); o[C.un] = isNaN(u)?1:u;
+    return o;
+  }).filter(o=>String(o[C.esc]).trim()!=='');
+
+  if(!novas.length){ mostrarErro('Nenhuma linha com escola preenchida.'); logar('0 linhas aproveitáveis.','er'); return; }
+  logar(`Linhas aproveitadas: <b>${novas.length}</b>`, 'ok');
+
+  PENDENTE = {tipo:'base', dados:novas, arquivo:nomeArquivo, origem, faltando};
+  montarPreview();
+}
+
+function processarCRM(objs, nomeArquivo, origem){
+  logar('Formato reconhecido: <b>export de carteira</b> (Salesforce).','ok');
+  const colEsc = Object.keys(objs[0]).find(k=>norm(k)==='ESCOLA');
+  const pega = (o,nome)=>{ const k=Object.keys(o).find(k=>norm(k)===norm(nome)); return k?String(o[k]).trim():''; };
+  const porEscola={}, usadas=new Set();
+  ROWS.forEach(r=>{
+    const nome = r[C.esc];
+    const chaves = (ALIAS[nome]||[]).map(norm);
+    let hit = objs.find(o=>chaves.some(k=>norm(o[colEsc]).includes(k)));
+    if(!hit){
+      /* fallback só com 2+ tokens distintivos: um token isolado ("Salvador")
+         casa com nome de cidade e produz junção errada silenciosa */
+      const tokens = norm(nome).replace(/^SINODAL /,'').split(' ')
+        .filter(t=>t.length>3 && !['SINODAL','COLEGIO','CENTRO','INSTITUTO','ESCOLA'].includes(t));
+      if(tokens.length>=2) hit = objs.find(o=>tokens.every(t=>norm(o[colEsc]).includes(t)));
+    }
+    if(hit){
+      usadas.add(hit[colEsc]);
+      porEscola[nome]={
+        oficial: hit[colEsc], ifCons:pega(hit,'IF Consolidado'), critica:pega(hit,'Esc. crítica'),
+        risco:pega(hit,'Risco Marca'), funil:pega(hit,'Etapa Funil Renovação'),
+        acv:pega(hit,'ACV 2026'), alunos:pega(hit,'Alunado pagante'),
+        vigencia:pega(hit,'Vigência'), objetivo:pega(hit,'Obj. Pedagógico'),
+        cidade:pega(hit,'Cidade'), uf:pega(hit,'UF'), pv:pega(hit,'Status PV'), fup:pega(hit,'Status FUP')
+      };
+    }
+  });
+  const semPar = ROWS.map(r=>r[C.esc]).filter(n=>!porEscola[n]);
+  const sinodaisSoltas = objs.map(o=>o[colEsc])
+    .filter(n=>/SINODAL|ISAEC|LUTERAN/i.test(n) && !usadas.has(n));
+
+  logar(`Linhas no arquivo: <b>${objs.length}</b>`, 'mu');
+  logar(`Escolas do painel casadas: <b>${Object.keys(porEscola).length}</b> de ${ROWS.length}`, Object.keys(porEscola).length===ROWS.length?'ok':'wr');
+  if(semPar.length) logar(`Sem correspondência: ${semPar.map(esc).join(' · ')}`, 'wr');
+  if(sinodaisSoltas.length) logar(`No arquivo mas fora do painel:<br>&nbsp;&nbsp;${sinodaisSoltas.map(n=>esc(String(n).replace(/^\[UNI\] - /,''))).join('<br>&nbsp;&nbsp;')}`, 'wr');
+
+  PENDENTE = {tipo:'crm', dados:{porEscola, naoCasadas:semPar, soltas:sinodaisSoltas, arquivo:nomeArquivo, quando:new Date().toISOString()},
+              arquivo:nomeArquivo, origem};
+  montarPreview();
+}
+
+function mostrarErro(html){
+  $('importMsg').innerHTML = `<div class="note err">${html}</div>`;
+  $('previewWrap').style.display='none'; PENDENTE=null;
+}
+
+/* ---------- preview ---------- */
+function montarPreview(){
+  $('importMsg').innerHTML='';
+  $('previewWrap').style.display='';
+  const P=PENDENTE;
+
+  if(P.tipo==='crm'){
+    $('previewTag').textContent='camada CRM';
+    const n=Object.keys(P.dados.porEscola).length;
+    $('previewKV').innerHTML = [
+      ['Arquivo', esc(P.arquivo)], ['Formato','Export de carteira (Salesforce)'],
+      ['Escolas casadas', `<b>${n}</b> de ${ROWS.length}`],
+      ['Efeito','Adiciona um painel de CRM e enriquece cada dossiê. <b>Não altera</b> a base da aba Transição Sinodais.']
+    ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+    $('previewDiff').innerHTML = Object.entries(P.dados.porEscola).map(([nome,d])=>
+      `<div class="drow"><div class="de">${esc(nome)}</div><div class="dc">
+        IF consolidado <code>${esc(d.ifCons||'—')}</code> · risco de marca <code>${esc(d.risco||'—')}</code> ·
+        funil <code>${esc(d.funil||'—')}</code> · ${esc(d.alunos||'—')} alunos pagantes</div></div>`).join('')
+      + (P.dados.naoCasadas.length?`<div class="note warn">Sem correspondência no arquivo: <b>${P.dados.naoCasadas.map(esc).join(' · ')}</b>. Essas escolas ficam sem a camada de CRM até os nomes baterem.</div>`:'');
+    return;
+  }
+
+  $('previewTag').textContent='base Transição Sinodais';
+  const antigas = ROWS, novas = P.dados;
+  const mapaAnt = {}; antigas.forEach(r=>mapaAnt[norm(r[C.esc])]=r);
+  const mapaNov = {}; novas.forEach(r=>mapaNov[norm(r[C.esc])]=r);
+  const entraram = novas.filter(r=>!mapaAnt[norm(r[C.esc])]).map(r=>r[C.esc]);
+  const sairam   = antigas.filter(r=>!mapaNov[norm(r[C.esc])]).map(r=>r[C.esc]);
+
+  const acompanhar=[C.dono,C.donoC,C.IF,C.nps,C.pb,C.com,C.farol,C.datas,C.modelo,C.sit];
+  const mudancas=[];
+  novas.forEach(nv=>{
+    const at = mapaAnt[norm(nv[C.esc])]; if(!at) return;
+    const dif = acompanhar.filter(c=>String(at[c]??'').trim()!==String(nv[c]??'').trim())
+      .map(c=>`${esc(c.replace('Satatus - ','').replace('Status - ',''))}: <span class="old">${esc(String(at[c]).trim()||'vazio')}</span> → <span class="new">${esc(String(nv[c]).trim()||'vazio')}</span>`);
+    if(dif.length) mudancas.push({escola:nv[C.esc], dif});
+  });
+
+  $('previewKV').innerHTML = [
+    ['Arquivo', esc(P.arquivo)], ['Origem', esc(P.origem)],
+    ['Escolas no arquivo', `<b>${novas.length}</b> (a base atual tem ${antigas.length})`],
+    ['Escolas alteradas', `<b>${mudancas.length}</b>`],
+    ['Entram', entraram.length?`<b>${entraram.map(esc).join(' · ')}</b>`:'nenhuma'],
+    ['Saem', sairam.length?`<b>${sairam.map(esc).join(' · ')}</b>`:'nenhuma']
+  ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+
+  $('previewDiff').innerHTML = mudancas.length
+    ? mudancas.map(m=>`<div class="drow"><div class="de">${esc(m.escola)}</div><div class="dc">${m.dif.join('<br>')}</div></div>`).join('')
+    : `<div class="note ok">Nenhuma diferença nos campos de acompanhamento. O arquivo bate com a base atual — aplicar não muda nada, o que também é uma informação útil.</div>`;
+
+  if(P.faltando && P.faltando.length)
+    $('previewDiff').innerHTML += `<div class="note warn">Colunas ausentes no arquivo (entram vazias): <b>${P.faltando.map(esc).join(' · ')}</b>.</div>`;
+  if(sairam.length)
+    $('previewDiff').innerHTML += `<div class="note err">Atenção: <b>${sairam.map(esc).join(' · ')}</b> ${sairam.length>1?'estão':'está'} na base atual mas não no arquivo. Aplicar vai remover ${sairam.length>1?'essas escolas':'essa escola'} do painel.</div>`;
+}
+
+/* ---------- aplicar ---------- */
+async function aplicar(){
+  if(!PENDENTE) return;
+  if(PENDENTE.tipo==='crm'){
+    CRM = PENDENTE.dados;
+    logar('Camada CRM aplicada.','ok');
+  } else {
+    ROWS = PENDENTE.dados;
+    META = {origem:PENDENTE.origem, quando:new Date().toISOString(), arquivo:PENDENTE.arquivo};
+    if(CRM) logar('Base substituída — reveja a camada CRM se os nomes de escola mudaram.','wr');
+    logar('Base atualizada.','ok');
+  }
+  const salvo = await salvar();
+  PENDENTE=null; $('previewWrap').style.display='none';
+  $('importMsg').innerHTML = `<div class="note ok">Atualização aplicada. ${salvo
+    ? 'A base ficou salva e volta sozinha na próxima vez que você abrir.'
+    : 'Neste ambiente não consigo gravar entre sessões — se fechar a aba, será preciso subir o arquivo de novo. Use “Baixar base em JSON” se quiser guardar.'}</div>`;
+  renderTudo();
+  document.querySelector('.tab[data-view="painel"]').click();
+}
+
+/* ==================== RENDER ==================== */
+function renderMeta(){
+  const q = META.quando ? new Date(META.quando) : null;
+  $('meta').innerHTML = [
+    ['Escolas', ROWS.length],
+    ['Unidades / CNPJs', ROWS.reduce((s,r)=>s+(+r[C.un]||0),0)],
+    ['Base', q ? q.toLocaleDateString('pt-BR') : 'inicial'],
+    ['Camada CRM', CRM ? `${Object.keys(CRM.porEscola).length} escolas` : 'não carregada']
+  ].map(([k,v],i)=>`<span class="chip${i>=2&&(q||CRM)?' live':''}">${k} <b>${v}</b></span>`).join('');
+  $('tabBadge').textContent = q ? q.toLocaleDateString('pt-BR') : 'base inicial';
+  $('stateKV').innerHTML = [
+    ['Origem', esc(META.origem)],
+    ['Arquivo', META.arquivo?esc(META.arquivo):'—'],
+    ['Atualizado em', q ? q.toLocaleString('pt-BR') : '—'],
+    ['Escolas', `<b>${ROWS.length}</b>`],
+    ['Camada CRM', CRM ? `<b>${Object.keys(CRM.porEscola).length}</b> escolas · ${esc(CRM.arquivo)}` : 'não carregada'],
+    ['Persistência', TEMSTORAGE ? 'ativa — a base volta sozinha' : 'indisponível neste ambiente']
+  ].map(([k,v])=>`<div class="k">${k}</div><div class="v">${v}</div>`).join('');
+}
+
+let FILTER={test:null,label:null};
+function setFilter(test,label){
+  if(FILTER.label===label){ clearFilter(); return; }
+  FILTER={test,label}; renderPainel(); $('tbl').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function clearFilter(){ FILTER={test:null,label:null};
+  ['f-dono','f-donoc','f-farol','f-if','f-nps','f-pend'].forEach(id=>{const e=$(id); if(e)e.value='';});
+  const s=$('search'); if(s)s.value=''; renderPainel(); }
+window.clearFilter = clearFilter;
+
+function renderKPIs(){
+  const nRed=ROWS.filter(r=>isRed(r[C.farol])).length;
+  const nPbNo=ROWS.filter(r=>String(r[C.pb]).trim()==='Não realizado').length;
+  const nSemAg=ROWS.filter(semAgenda).length;
+  const nGap=ROWS.filter(temFalta).length;
+  const nIF1=ROWS.filter(r=>+r[C.IF]===1).length;
+  const k=[
+    {c:'',num:ROWS.length,sub:'Rede Sinodal',lbl:'Escolas na transição'},
+    {c:'risk',num:nRed,sub:'Farol vermelho',lbl:'Contas em risco de satisfação'},
+    {c:'risk',num:nIF1,sub:'IF 1',lbl:'Escolas com distrato verbalizado'},
+    {c:'warn',num:nPbNo,sub:'Bastão pendente',lbl:'Passagem interna não realizada'},
+    {c:'warn',num:nSemAg,sub:'Sem agenda',lbl:'Sem próxima consultoria prevista'},
+    {c:'warn',num:nGap,sub:'Radar em branco',lbl:'Campos do radar marcados como FALTA'}
+  ];
+  $('kpis').innerHTML=k.map(o=>`<div class="kpi ${o.c}"><div class="spine"></div>
+    <div class="num">${o.num}</div><div class="sub">${o.sub}</div><div class="lbl">${o.lbl}</div></div>`).join('');
+}
+
+function renderIF(){
+  const dist={1:0,2:0,3:0,4:0}; ROWS.forEach(r=>{const n=+r[C.IF]; if(dist[n]!==undefined)dist[n]++;});
+  const mx=Math.max(1,...Object.values(dist));
+  $('ifNote').innerHTML = CRM
+    ? 'A escala foi confirmada pelo export de carteira: <b>1 = distrato verbalizado, 2 = perda provável, 3 = neutro/controle, 4 = satisfeito</b>. Clique numa faixa para filtrar.'
+    : 'IF mais baixo concentra os casos em risco; IF mais alto acompanha escolas promotoras. Clique numa faixa para filtrar a tabela.';
+  $('ifbars').innerHTML=[1,2,3,4].map(k=>
+    `<div class="ifcol" data-if="${k}"><div class="bv">${dist[k]}</div>
+     <div class="bar" style="height:${Math.max(dist[k]/mx*100,4)}%;background:${IFHEX[k]}"></div>
+     <div class="bx">IF ${k}</div></div>`).join('');
+  document.querySelectorAll('#ifbars .ifcol').forEach(el=>el.addEventListener('click',()=>{
+    const k=+el.dataset.if; setFilter(r=>+r[C.IF]===k,`IF · ${k}`);}));
+  $('ifside').innerHTML=[4,3,2,1].map(k=>
+    `<div class="row"><span class="ifdot" style="background:${IFHEX[k]}">${k}</span>
+     <span class="txt"><b>${dist[k]} escola${dist[k]===1?'':'s'}</b> · ${IFNOME[k]}</span></div>`).join('');
+}
+
+function ownerChart(elId,col,color,vazio){
+  const map={}; ROWS.forEach(r=>{const v=String(r[col]).trim()||vazio; map[v]=(map[v]||0)+1;});
+  const ord=Object.entries(map).sort((a,b)=>b[1]-a[1]); const mx=ord[0]?ord[0][1]:1;
+  $(elId).innerHTML=ord.map(([n,v])=>{
+    const nulo=n===vazio;
+    return `<div class="orow" data-v="${esc(n)}">
+      <div class="on" style="${nulo?'color:var(--faint);font-style:italic':''}">${esc(n)}</div>
+      <div class="otrack"><div class="ofill" style="width:${v/mx*100}%;background:${nulo?'#C7CFD8':color}"></div></div>
+      <div class="ov">${v}</div></div>`;}).join('');
+  document.querySelectorAll('#'+elId+' .orow').forEach(el=>el.addEventListener('click',()=>{
+    const v=el.dataset.v;
+    setFilter(r=>(String(r[col]).trim()||vazio)===v, `${col===C.dono?'Dono':'Comunicação'} · ${v}`);}));
+}
+
+function renderMotivos(){
+  const map={};
+  ROWS.forEach(r=>{ if(!r[C.mot])return; const iff=+r[C.IF]||0;
+    String(r[C.mot]).split(',').map(s=>s.trim()).filter(Boolean).forEach(m=>{
+      map[m]=map[m]||{1:0,2:0,3:0,4:0,tot:0}; map[m][iff]=(map[m][iff]||0)+1; map[m].tot++; });});
+  const ord=Object.entries(map).sort((a,b)=>b[1].tot-a[1].tot);
+  const mx=Math.max(1,...ord.map(([,v])=>v.tot));
+  $('motivos').innerHTML=ord.map(([m,v])=>{
+    const segs=[1,2,3,4].filter(k=>v[k]).map(k=>
+      `<div class="mseg" data-mot="${esc(m)}" style="width:${v[k]/mx*100}%;background:${IFHEX[k]}"><title>${esc(m)} · IF ${k}: ${v[k]}</title></div>`).join('');
+    return `<div class="mrow"><div class="mname">${esc(m)}</div><div class="mtrack">${segs}</div><div class="mtot">${v.tot}</div></div>`;}).join('')
+    || '<p style="color:var(--faint);font-size:13px">Nenhum motivo registrado.</p>';
+  $('mot-legend').innerHTML=[1,2,3,4].map(k=>
+    `<div class="lg"><span class="sw" style="background:${IFHEX[k]}"></span>IF ${k}</div>`).join('')
+    +`<div class="lg" style="color:var(--faint)">Largura = nº de escolas que citam o motivo</div>`;
+  document.querySelectorAll('#motivos .mseg').forEach(el=>el.addEventListener('click',()=>{
+    const m=el.dataset.mot; setFilter(r=>String(r[C.mot]).indexOf(m)>-1,`Motivo · ${m}`);}));
+}
+
+function renderReadiness(){
+  const N=ROWS.length||1;
+  const def=ROWS.filter(r=>String(r[C.dono]).trim()&&String(r[C.dono]).trim().toUpperCase()!=='VAGA').length;
+  const pbNo=ROWS.filter(r=>String(r[C.pb]).trim()==='Não realizado').length;
+  const comNo=ROWS.filter(r=>String(r[C.com]).trim()==='Não realizado').length;
+  const semAg=ROWS.filter(semAgenda).length, agOk=N-semAg;
+  const bloco=(t,parts,big,cor)=>`<div class="rblock"><div class="rt">${t}</div>
+    <div class="rbar">${parts.map(p=>`<span style="width:${p.v/N*100}%;background:${p.c}"></span>`).join('')}</div>
+    <div class="rlab">${parts.map(p=>`<span>${p.l} ${p.v}</span>`).join('')}</div>
+    <div class="rbig" style="color:${cor}">${big}</div></div>`;
+  $('readyNote').innerHTML = def===N
+    ? `<b>Todas as ${N} escolas já têm dono para 2026.</b> O que trava agora é a etapa seguinte — a passagem de bastão interna segue não realizada em ${pbNo} escolas, a comunicação com a escola em ${comNo}, e ${semAg} continuam sem próxima consultoria prevista.`
+    : `${N-def} escolas ainda sem dono definido para 2026. Passagem de bastão pendente em ${pbNo}, comunicação em ${comNo}, e ${semAg} sem consultoria prevista.`;
+  $('readiness').innerHTML=
+    bloco('Dono definido para 2026',[{l:'Definido',v:def,c:'var(--green)'},{l:'Vago',v:N-def,c:'var(--red)'}],`${def} de ${N}`,def===N?'var(--green)':'var(--red)')+
+    bloco('Passagem de bastão interna',[{l:'Não realizado',v:pbNo,c:'var(--amber)'},{l:'N/A',v:N-pbNo,c:'#C7CFD8'}],`${pbNo} pendentes`,'var(--amber)')+
+    bloco('Comunicação com a escola',[{l:'Não realizado',v:comNo,c:'var(--amber)'},{l:'N/A',v:N-comNo,c:'#C7CFD8'}],`${comNo} pendentes`,'var(--amber)')+
+    bloco('Próxima consultoria agendada',[{l:'Agendada',v:agOk,c:'var(--green)'},{l:'Sem previsão',v:semAg,c:'var(--red)'}],`${semAg} sem data`,'var(--red)');
+}
+
+function renderCRM(){
+  if(!CRM || !Object.keys(CRM.porEscola).length){ $('crmPanelWrap').style.display='none'; return; }
+  $('crmPanelWrap').style.display='';
+  const n=Object.keys(CRM.porEscola).length;
+  $('crmTag').textContent=`${n} de ${ROWS.length} escolas`;
+  $('crmNote').innerHTML=`Dados do export de carteira <b>${esc(CRM.arquivo)}</b>, casados por nome com as escolas da aba. `+
+    (CRM.naoCasadas.length?`Sem correspondência: <b>${CRM.naoCasadas.map(esc).join(' · ')}</b>.`:'Todas as escolas casaram.');
+  const linhas=ROWS.filter(r=>CRM.porEscola[r[C.esc]]).map(r=>{
+    const d=CRM.porEscola[r[C.esc]];
+    const risco=/alt/i.test(d.risco);
+    return `<tr><td>${esc(r[C.esc])}</td><td>${esc(d.ifCons)}</td>
+      <td>${d.critica==='Sim'?'<span class="pill red">Sim</span>':esc(d.critica||'—')}</td>
+      <td>${risco?`<span class="pill red">${esc(d.risco)}</span>`:esc(d.risco||'—')}</td>
+      <td>${esc(d.funil||'—')}</td><td>${esc(d.alunos||'—')}</td>
+      <td>${esc(d.vigencia||'—')}</td><td>${esc(d.cidade||'—')}/${esc(d.uf||'')}</td></tr>`;}).join('');
+  $('crmTbl').innerHTML=`<thead><tr><th>Escola</th><th>IF consolidado</th><th>Crítica</th><th>Risco marca</th>
+    <th>Etapa funil</th><th>Alunos pagantes</th><th>Vigência</th><th>Cidade</th></tr></thead><tbody>${linhas}</tbody>`;
+}
+
+let openAll=false;
+function dossierHTML(r){
+  const sec=(cls,titulo,v)=>{
+    const d=radar(v);
+    if(d==='none') return `<div class="dsec ${cls}"><h4>${titulo}</h4><span class="nonereg">nada registrado</span></div>`;
+    if(d==='falta') return `<div class="dsec ${cls}"><h4>${titulo}</h4><span class="nofill">a preencher na planilha</span></div>`;
+    return `<div class="dsec ${cls}"><h4>${titulo}</h4><ul>${d.map(i=>`<li>${esc(i)}</li>`).join('')}</ul></div>`;
+  };
+  const nC=Array.isArray(radar(r[C.crit]))?radar(r[C.crit]).length:0;
+  const nA=Array.isArray(radar(r[C.act]))?radar(r[C.act]).length:0;
+  const bits=[]; if(nC)bits.push(`${nC} crítico${nC>1?'s':''}`); if(nA)bits.push(`${nA} ação${nA>1?'ões':''}`);
+  if(temFalta(r))bits.push('campos a preencher');
+  const d = CRM && CRM.porEscola[r[C.esc]];
+  const crmSec = d ? `<div class="dsec crm"><h4>Carteira / CRM</h4><div class="crmgrid">${
+    [['IF consolidado',d.ifCons],['Risco de marca',d.risco],['Escola crítica',d.critica],
+     ['Etapa do funil',d.funil],['Alunos pagantes',d.alunos],['Vigência',d.vigencia],
+     ['Objetivo pedagógico',d.objetivo],['Cidade',`${d.cidade}/${d.uf}`]]
+    .filter(([,v])=>v).map(([k,v])=>`<div class="ci"><div class="cl">${k}</div><div class="cv">${esc(v)}</div></div>`).join('')
+  }</div></div>` : '';
+  return `<div class="dossier ${isRed(r[C.farol])?'red':''} ${openAll?'open':''}">
+    <button class="dhead" aria-expanded="${openAll}">
+      <span class="ifdot" style="background:${IFHEX[+r[C.IF]]||'#ccc'}">${esc(r[C.IF])}</span>
+      <span class="dname">${esc(r[C.esc])}</span>
+      ${isRed(r[C.farol])?'<span class="pill red"><span class="dot" style="background:var(--red)"></span>Risco</span>':''}
+      <span class="dcount">${bits.join(' · ')||'sem registros'}</span><span class="dcaret">▸</span>
+    </button>
+    <div class="dbody">
+      ${String(r[C.obs]).trim()?`<div class="dsec obs"><h4>Observação</h4><p>${esc(r[C.obs])}</p></div>`:''}
+      ${sec('crit','Pontos críticos no radar',r[C.crit])}
+      ${sec('opp','Pontos de oportunidade',r[C.opp])}
+      ${sec('act','Ações previstas',r[C.act])}
+      ${crmSec}
+    </div></div>`;
+}
+
+const MES={1:'Janeiro',2:'Fevereiro',3:'Março',4:'Abril',5:'Maio',6:'Junho',7:'Julho',
+  8:'Agosto',9:'Setembro',10:'Outubro',11:'Novembro',12:'Dezembro'};
+function renderAgenda(){
+  const buckets={}, pend=[];
+  ROWS.forEach(r=>{
+    if(semAgenda(r)){pend.push(r[C.esc]);return;}
+    const re=/(\d{2})\/(\d{2})\s*(?:\(([^)]*)\))?/g; let m,achou=false;
+    while((m=re.exec(r[C.datas]))){ achou=true; const mes=+m[2];
+      (buckets[mes]=buckets[mes]||[]).push({dia:m[1],esc:r[C.esc],quem:(m[3]||'').trim(),risco:isRed(r[C.farol])}); }
+    if(!achou)pend.push(r[C.esc]);
+  });
+  $('agenda').innerHTML=Object.keys(buckets).map(Number).sort((a,b)=>a-b).map(mes=>{
+    const it=buckets[mes].sort((a,b)=>a.dia.localeCompare(b.dia));
+    return `<div class="amon"><h4>${MES[mes]||('Mês '+mes)}</h4><ul>${it.map(i=>{
+      const ab=/vaga|definir/i.test(i.quem);
+      return `<li><span class="ad">${i.dia}</span><span class="ae">${esc(i.esc)}
+        ${i.risco?'<span class="pill red" style="padding:1px 7px;font-size:9.5px">risco</span>':''}
+        ${i.quem?`<span class="aw" style="${ab?'color:#B23029':''}">${esc(i.quem)}</span>`:''}</span></li>`;}).join('')}</ul></div>`;
+  }).join('') || '<p style="color:var(--faint);font-size:13px">Nenhuma data encontrada.</p>';
+  $('noAgenda').innerHTML = pend.length
+    ? `<div style="margin-top:18px;padding:14px 16px;background:#FBE9E8;border-radius:10px;font-size:13px;color:#B23029">
+       <b>${pend.length} escola${pend.length>1?'s':''} sem data de consultoria:</b> ${pend.map(esc).join(' · ')}</div>` : '';
+}
+
+const WRAP=[C.sit,C.mot,C.datas,C.obs,C.crit,C.opp,C.act];
+function cell(col,v){
+  if([C.crit,C.opp,C.act].includes(col)){
+    const d=radar(v);
+    if(d==='falta') return '<span class="pill falta">a preencher</span>';
+    if(d==='none') return '<span style="color:#B8C0C9">—</span>';
+    return d.map(i=>`• ${esc(i)}`).join('<br>');
+  }
+  if(v===''||v==null) return '<span style="color:#B8C0C9">—</span>';
+  if(col===C.farol) return isRed(v)?'<span class="pill red"><span class="dot" style="background:var(--red)"></span>Risco</span>':'<span class="pill grey">—</span>';
+  if(col===C.IF) return `<span class="ifdot" style="background:${IFHEX[+v]||'#ccc'}">${esc(v)}</span>`;
+  if(col===C.nps){const s=String(v).trim().toUpperCase();return s==='PROMOTOR'?'<span class="pill prom">Promotor</span>':s==='FALTA'?'<span class="pill falta">Falta</span>':esc(v);}
+  if(col===C.dono) return `<span class="pill def">${esc(v)}</span>`;
+  if(col===C.donoC) return `<span class="pill teal">${esc(v)}</span>`;
+  if(col===C.pb||col===C.com) return String(v).trim()==='Não realizado'?'<span class="pill falta">Não realizado</span>':esc(v);
+  if(col===C.datas&&/não tem previsão/i.test(v)) return '<span class="pill red">Sem previsão</span>';
+  return esc(v);
+}
+function currentRows(){
+  const q=($('search')?.value||'').toLowerCase();
+  const menu={ [C.dono]:'f-dono',[C.donoC]:'f-donoc',[C.farol]:'f-farol',[C.IF]:'f-if',[C.nps]:'f-nps' };
+  const pend=$('f-pend')?.value||'';
+  return ROWS.filter(r=>{
+    if(FILTER.test && !FILTER.test(r)) return false;
+    for(const col in menu){const e=$(menu[col]); if(e&&e.value){
+      if(col===C.farol){ if(farolKey(r[col])!==e.value) return false; }
+      else if(String(r[col]).trim()!==e.value) return false; }}
+    if(pend==='bastao'&&String(r[C.pb]).trim()!=='Não realizado') return false;
+    if(pend==='com'&&String(r[C.com]).trim()!=='Não realizado') return false;
+    if(pend==='agenda'&&!semAgenda(r)) return false;
+    if(pend==='falta'&&!temFalta(r)) return false;
+    if(q) return COLS.some(c=>String(r[c]).toLowerCase().indexOf(q)>-1);
+    return true;
+  });
+}
+function renderControls(){
+  const opt=(vals,ph)=>[`<option value="">${ph}</option>`].concat(uniq(vals).filter(v=>v!==''&&v!=null).sort().map(v=>`<option>${esc(v)}</option>`)).join('');
+  $('controls').innerHTML=`
+    <select id="f-dono">${opt(ROWS.map(r=>r[C.dono]),'Dono 2026: todos')}</select>
+    <select id="f-donoc">${opt(ROWS.map(r=>r[C.donoC]),'Comunicação: todos')}</select>
+    <select id="f-farol">${['<option value="">Farol: todos</option>'].concat(uniq(ROWS.map(r=>farolKey(r[C.farol]))).map(v=>`<option>${v}</option>`)).join('')}</select>
+    <select id="f-if">${opt(ROWS.map(r=>r[C.IF]),'IF: todos')}</select>
+    <select id="f-nps">${opt(ROWS.map(r=>r[C.nps]),'NPS: todos')}</select>
+    <select id="f-pend">
+      <option value="">Pendência: qualquer</option>
+      <option value="bastao">Bastão não realizado</option>
+      <option value="com">Comunicação não realizada</option>
+      <option value="agenda">Sem data de consultoria</option>
+      <option value="falta">Radar a preencher</option></select>
+    <input type="search" id="search" placeholder="Buscar em toda a base…">
+    <span class="btn" onclick="clearFilter()">Limpar</span>
+    <span class="tcount" id="tcount"></span>`;
+  ['f-dono','f-donoc','f-farol','f-if','f-nps','f-pend'].forEach(id=>
+    $(id).addEventListener('change',()=>{FILTER={test:null,label:null};renderPainel();}));
+  $('search').addEventListener('input',renderPainel);
+}
+function renderPainel(){
+  const rows=currentRows();
+  $('active-filters').innerHTML = FILTER.label
+    ? `<span class="active-filter" onclick="clearFilter()">Filtro: <b>${esc(FILTER.label)}</b> <span class="x">✕ limpar</span></span>` : '';
+  $('thead').innerHTML='<tr>'+COLS.map(c=>`<th>${esc(c)}</th>`).join('')+'</tr>';
+  $('tbody').innerHTML=rows.map(r=>'<tr>'+COLS.map(c=>{
+    const cls=c===C.esc?'esc':WRAP.includes(c)?'wrapcell':'';
+    return `<td class="${cls}">${cell(c,r[c])}</td>`;}).join('')+'</tr>').join('')
+    || `<tr><td colspan="${COLS.length}" style="padding:30px;text-align:center;color:var(--muted)">Nenhuma escola corresponde aos filtros. <span class="btn" onclick="clearFilter()">Limpar tudo</span></td></tr>`;
+  if($('tcount')) $('tcount').textContent=`${rows.length} de ${ROWS.length} escolas`;
+  $('dossiers').innerHTML = rows.length ? rows.map(dossierHTML).join('')
+    : `<p style="color:var(--muted);font-size:13px;margin:0">Nenhuma escola corresponde aos filtros.</p>`;
+  $('dcount').textContent=`${rows.length} de ${ROWS.length} escolas`;
+}
+function renderTudo(){
+  renderMeta(); renderKPIs(); renderIF();
+  ownerChart('ownChart',C.dono,'var(--teal)','—');
+  ownerChart('comChart',C.donoC,'#8FB255','Não definido');
+  renderMotivos(); renderReadiness(); renderCRM(); renderAgenda();
+  renderControls(); renderPainel();
+  $('colcount').textContent=`${ROWS.length} escolas · ${COLS.length} colunas`;
+  $('foot').innerHTML=`Fonte: aba <b>Transição Sinodais</b> · ${ROWS.length} escolas, ${COLS.length} colunas.<br>
+    IF na escala 1–4: 1 distrato verbalizado · 2 perda provável · 3 neutro/controle · 4 satisfeito.
+    Células marcadas como “a preencher” correspondem a <b>FALTA</b> ou vazio na origem.`;
+}
+
+/* ==================== EVENTOS ==================== */
+document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>{
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));
+  t.classList.add('on'); $('v-'+t.dataset.view).classList.add('on');
+  window.scrollTo({top:0,behavior:'smooth'});
+}));
+$('dossiers').addEventListener('click',e=>{
+  const b=e.target.closest('.dhead'); if(!b)return;
+  const d=b.closest('.dossier'); b.setAttribute('aria-expanded',d.classList.toggle('open'));
+});
+$('expandAll').addEventListener('click',e=>{
+  openAll=!openAll; e.target.textContent=openAll?'Fechar todas':'Abrir todas'; renderPainel();
+});
+const drop=$('drop'), file=$('file');
+drop.addEventListener('click',()=>file.click());
+drop.addEventListener('dragover',e=>{e.preventDefault();drop.classList.add('over');});
+drop.addEventListener('dragleave',()=>drop.classList.remove('over'));
+drop.addEventListener('drop',e=>{e.preventDefault();drop.classList.remove('over');
+  if(e.dataTransfer.files.length) lerArquivo(e.dataTransfer.files[0]);});
+file.addEventListener('change',e=>{ if(e.target.files.length) lerArquivo(e.target.files[0]); e.target.value=''; });
+$('apply').addEventListener('click',aplicar);
+$('cancel').addEventListener('click',()=>{PENDENTE=null;$('previewWrap').style.display='none';
+  $('importMsg').innerHTML='<div class="note warn">Importação cancelada. A base atual continua como estava.</div>';});
+$('exportJson').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify({rows:ROWS,crm:CRM,meta:META},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='transicao-sinodais-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+});
+$('reset').addEventListener('click',async ()=>{
+  ROWS=BASE.map(r=>({...r})); CRM=null; META={origem:'base inicial',quando:null,arquivo:null};
+  await salvar(); renderTudo();
+  $('stateMsg').innerHTML='<div class="note ok">Base restaurada para a versão inicial.</div>';
+});
+
+/* ==================== BOOT ==================== */
+(async function(){
+  await carregar();
+  renderTudo();
+  if(!TEMSTORAGE) $('stateMsg').innerHTML =
+    '<div class="note warn">Este ambiente não guarda dados entre sessões. A importação funciona normalmente, mas ao fechar a aba a base volta ao ponto inicial — use <b>Baixar base em JSON</b> se quiser um registro.</div>';
+})();
+</script>
+</body>
+</html>
